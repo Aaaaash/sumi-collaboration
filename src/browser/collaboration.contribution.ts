@@ -1,6 +1,8 @@
 import { Injectable, Autowired } from '@opensumi/di';
 import { AppConfig, ClientAppContribution, Domain } from '@opensumi/ide-core-browser';
+
 import { ICollaborationService } from 'common';
+
 
 const TestClientId = 'test-client-id';
 

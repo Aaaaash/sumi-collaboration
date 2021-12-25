@@ -1,0 +1,6 @@
+s
+class App {
+  constructor() {
+
+  }
+}
