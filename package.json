@@ -24,7 +24,9 @@
   "dependencies": {
     "@opensumi/ide-core-browser": "^2.13.4",
     "@opensumi/ide-core-common": "^2.13.4",
-    "@opensumi/ide-core-node": "^2.13.4"
+    "@opensumi/ide-core-node": "^2.13.4",
+    "y-webrtc": "^10.2.2",
+    "yjs": "^13.5.23"
   },
   "devDependencies": {
     "@opensumi/ide-addons": "^2.13.0",
@@ -72,7 +74,6 @@
     "@opensumi/ide-webview": "^2.13.0",
     "@opensumi/ide-workspace": "^2.13.0",
     "@opensumi/ide-workspace-edit": "^2.13.0",
-    "koa-static": "^5.0.0",
     "@types/koa-static": "^4.0.2",
     "await-event": "^2.1.0",
     "clean-webpack-plugin": "^3.0.0",
@@ -89,6 +90,7 @@
     "http-proxy-middleware": "^1.0.4",
     "koa": "^2.7.0",
     "koa-bodyparser": "^4.2.1",
+    "koa-static": "^5.0.0",
     "less": "^3.9.0",
     "less-loader": "^6.0.0",
     "mini-css-extract-plugin": "^0.6.0",
