@@ -11,9 +11,18 @@ export class CollaborationServiceImpl extends Disposable implements ICollaborati
 
   private yWebRTCProvider?: WebrtcProvider;
 
+  private getUserName() {
+    return `Aaaaash` + Math.random();
+  }
+
   initializeYDoc(clientId: string): void {
     this.yDoc = initializeYDoc(clientId);
     this.yWebRTCProvider = initializeWebRTCProvider(this.yDoc);
+
+    this.yWebRTCProvider.awareness.setLocalStateField('user', {
+      name: this.getUserName(),
+    });
+
     this.yWebRTCProvider.awareness.on('change', this.onDidAwarenessChange.bind(this));
     this.onDispose(() => {
       this.yDoc?.destroy();
