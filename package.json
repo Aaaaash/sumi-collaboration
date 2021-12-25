@@ -1,0 +1,9 @@
+{
+  "name": "sumi-collaboration",
+  "version": "1.0.0",
+  "description": "Yjs-based OpenSumi collaboration module.",
+  "main": "index.js",
+  "repository": "git@github.com:Aaaaash/sumi-collaboration.git",
+  "author": "大表哥 <binshao54@gmail.com>",
+  "license": "MIT"
+}
