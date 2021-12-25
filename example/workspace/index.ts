@@ -1,6 +1,2 @@
-s
-class App {
-  constructor() {
 
-  }
-}
+splitSnapshotAffectedStructs

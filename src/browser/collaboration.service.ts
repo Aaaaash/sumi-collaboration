@@ -1,59 +1,23 @@
 import * as Y from 'yjs';
 import { Selection, SelectionDirection } from '@opensumi/monaco-editor-core/esm/vs/editor/common/core/selection';
+import { Range } from '@opensumi/monaco-editor-core/esm/vs/editor/common/core/range';
 import { WebrtcProvider } from 'y-webrtc';
 import { createMutex } from 'lib0/mutex.js';
 import { Injectable, Autowired } from '@opensumi/di';
 import { OnEvent, WithEventBus } from '@opensumi/ide-core-common';
 import { IEditor, WorkbenchEditorService } from '@opensumi/ide-editor/lib/common';
+import { EditorActiveResourceStateChangedEvent } from '@opensumi/ide-editor/lib/browser';
 import { v4 } from 'uuid';
 
 import { ICollaborationService } from 'common';
-import { initializeWebRTCProvider, initializeYDoc } from './yjs/binding';
-import { EditorActiveResourceStateChangedEvent, EditorGroupChangeEvent } from '@opensumi/ide-editor/lib/browser';
-
-class RelativeSelection {
-  start: Y.RelativePosition;
-  end: Y.RelativePosition;
-  direction: SelectionDirection;
-
-  constructor (start: Y.RelativePosition, end: Y.RelativePosition, direction: SelectionDirection) {
-    this.start = start
-    this.end = end
-    this.direction = direction
-  }
-}
-
-const createRelativeSelection = (editor, monacoModel, type) => {
-  const sel = editor.getSelection()
-  if (sel !== null) {
-    const startPos = sel.getStartPosition()
-    const endPos = sel.getEndPosition()
-    const start = Y.createRelativePositionFromTypeIndex(type, monacoModel.getOffsetAt(startPos))
-    const end = Y.createRelativePositionFromTypeIndex(type, monacoModel.getOffsetAt(endPos))
-    return new RelativeSelection(start, end, sel.getDirection())
-  }
-  return null
-}
-
-
-/**
- * @param {monaco.editor.IEditor} editor
- * @param {Y.Text} type
- * @param {RelativeSelection} relSel
- * @param {Y.Doc} doc
- * @return {null|monaco.Selection}
- */
- const createMonacoSelectionFromRelativeSelection = (editor, type, relSel, doc) => {
-  const start = Y.createAbsolutePositionFromRelativePosition(relSel.start, doc)
-  const end = Y.createAbsolutePositionFromRelativePosition(relSel.end, doc)
-  if (start !== null && end !== null && start.type === type && end.type === type) {
-    const model = /** @type {monaco.editor.ITextModel} */ (editor.getModel())
-    const startPos = model.getPositionAt(start.index)
-    const endPos = model.getPositionAt(end.index)
-    return Selection.createWithDirection(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column, relSel.direction)
-  }
-  return null
-}
+import {
+  createMonacoSelectionFromRelativeSelection,
+  createRelativeSelection,
+  initializeWebRTCProvider,
+  initializeYDoc,
+} from './yjs/binding';
+import { IModelDeltaDecoration } from '@opensumi/monaco-editor-core/esm/vs/editor/common/model';
+import './styles.less';
 
 @Injectable()
 export class CollaborationServiceImpl extends WithEventBus implements ICollaborationService {
@@ -71,7 +35,9 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
 
   private textEditors: Set<IEditor> = new Set();
 
-  private savedSelections = new Map()
+  private savedSelections = new Map();
+
+  private decorations: Map<IEditor, string[]> = new Map();
 
   @Autowired()
   protected readonly editorService: WorkbenchEditorService;
@@ -82,23 +48,24 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
   onEditorActiveResourceStateChangedEvent(e: EditorActiveResourceStateChangedEvent) {
     if (this.editorService.currentEditor && !this.textEditors.has(this.editorService.currentEditor)) {
       this.textEditors.add(this.editorService.currentEditor);
+      const monacoEditor = this.editorService.currentEditor.monacoEditor;
 
-      const model = this.editorService.currentEditor?.monacoEditor.getModel();
-      if (!model || !this.yDoc) {
+      const textModel = monacoEditor.getModel();
+      if (!textModel || !this.yDoc) {
         return;
       }
 
-      const yText = this.yDoc?.getText(model?.getValue());
-      this.yTexts.set(model?.uri.toString(), yText);
+      const yText = this.yDoc?.getText(textModel?.getValue());
+      this.yTexts.set(textModel?.uri.toString(), yText);
       yText?.observe(this.onDidTextChange.bind(this));
-      model?.setValue(yText?.toString() || '');
+      textModel?.setValue(yText?.toString() || '');
 
-      const rsel = createRelativeSelection(this.editorService.currentEditor.monacoEditor, model, yText);
+      const rsel = createRelativeSelection(this.editorService.currentEditor.monacoEditor, textModel, yText);
       if (rsel !== null) {
         this.savedSelections.set(this.editorService.currentEditor.monacoEditor, rsel);
       }
 
-      model?.onDidChangeContent((event) => {
+      textModel?.onDidChangeContent((event) => {
         this.mutex(() => {
           this.yDoc?.transact(() => {
             event.changes
@@ -109,6 +76,26 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
               });
           }, this);
         });
+      });
+
+      monacoEditor.onDidChangeCursorSelection(() => {
+        if (monacoEditor.getModel() === textModel) {
+          const sel = monacoEditor.getSelection();
+          if (sel === null) {
+            return;
+          }
+          let anchor = textModel.getOffsetAt(sel.getStartPosition());
+          let head = textModel.getOffsetAt(sel.getEndPosition());
+          if (sel.getDirection() === SelectionDirection.RTL) {
+            const tmp = anchor;
+            anchor = head;
+            head = tmp;
+          }
+          this.yWebRTCProvider?.awareness.setLocalStateField('selection', {
+            anchor: Y.createRelativePositionFromTypeIndex(yText, anchor),
+            head: Y.createRelativePositionFromTypeIndex(yText, head),
+          });
+        }
       });
     }
   }
@@ -159,9 +146,63 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
       this.savedSelections.forEach((rsel, editor) => {
         const sel = createMonacoSelectionFromRelativeSelection(editor, yText, rsel, this.yDoc);
         if (sel !== null) {
-          editor.setSelection(sel)
+          editor.setSelection(sel);
         }
-      })
+      });
+    });
+    this.renderDecorations();
+  }
+
+  private renderDecorations() {
+    this.textEditors.forEach((editor) => {
+      const textModel = this.editorService.currentEditor?.monacoEditor.getModel();
+      const yText = this.yTexts.get(textModel?.uri.toString()!);
+      if (!yText || !textModel) {
+        return;
+      }
+      if (this.yWebRTCProvider?.awareness && editor.monacoEditor.getModel() === textModel) {
+        const currentDecorations = this.decorations.get(editor) || [];
+        const newDecorations: IModelDeltaDecoration[] = [];
+        const getLocalState = this.yWebRTCProvider?.awareness.getLocalState();
+        this.yWebRTCProvider?.awareness.getStates().forEach((state, clientID) => {
+          if (
+            clientID !== this.yDoc?.clientID &&
+            state.selection != null &&
+            state.selection.anchor != null &&
+            state.selection.head != null
+            ) {
+            const anchorAbs = Y.createAbsolutePositionFromRelativePosition(state.selection.anchor, this.yDoc!);
+            const headAbs = Y.createAbsolutePositionFromRelativePosition(state.selection.head, this.yDoc!);
+            if (anchorAbs !== null && headAbs !== null && anchorAbs.type === yText && headAbs.type === yText) {
+              let start, end, afterContentClassName, beforeContentClassName;
+              if (anchorAbs.index < headAbs.index) {
+                start = textModel.getPositionAt(anchorAbs.index);
+                end = textModel.getPositionAt(headAbs.index);
+                afterContentClassName = 'yRemoteSelectionHead';
+                beforeContentClassName = null;
+              } else {
+                start = textModel.getPositionAt(headAbs.index);
+                end = textModel.getPositionAt(anchorAbs.index);
+                afterContentClassName = null;
+                beforeContentClassName = 'yRemoteSelectionHead';
+              }
+              newDecorations.push({
+                range: new Range(start.lineNumber, start.column, end.lineNumber, end.column),
+                options: {
+                  description: 'Remote Selection',
+                  className: 'yRemoteSelection',
+                  afterContentClassName,
+                  beforeContentClassName,
+                },
+              });
+            }
+          }
+        });
+        this.decorations.set(editor, editor.monacoEditor.deltaDecorations(currentDecorations, newDecorations));
+      } else {
+        // ignore decorations
+        this.decorations.delete(editor);
+      }
     });
   }
 
