@@ -31,7 +31,7 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
   private mutex = createMutex();
 
   private getUserName() {
-    return `大表哥` + v4();
+    return `aaaaash` + v4();
   }
 
   private collaborators = new Map<number, { user: string }>();

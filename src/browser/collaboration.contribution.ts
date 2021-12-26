@@ -3,7 +3,7 @@ import { AppConfig, ClientAppContribution, Domain } from '@opensumi/ide-core-bro
 
 import { ICollaborationService } from 'common';
 
-const TestClientId = 'test-client-id' +  Math.random();
+const TestClientId = 'test-client-id' + Math.random();
 
 @Injectable()
 @Domain(ClientAppContribution)

@@ -12,7 +12,6 @@ export class CollaborationBorwserModule extends BrowserModule {
     {
       token: ICollaborationService,
       useClass: CollaborationServiceImpl,
-    }
+    },
   ];
-
 }

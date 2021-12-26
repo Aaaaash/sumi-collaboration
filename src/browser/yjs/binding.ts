@@ -9,7 +9,7 @@ import {
   SelectionDirection,
 } from '@opensumi/monaco-editor-core/esm/vs/editor/common/core/selection';
 
-const TEST_ROOM_ID = 'ash_test-client-id';
+const TEST_ROOM_ID = 'ash-test-room-id';
 
 export function initializeYDoc(clientId: string) {
   const ydoc = new Y.Doc({
