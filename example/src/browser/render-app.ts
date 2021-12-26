@@ -3,6 +3,16 @@ import { ClientApp, IClientAppOpts } from '@opensumi/ide-core-browser';
 import { ToolbarActionBasedLayout } from '@opensumi/ide-core-browser/lib/components';
 import { StatusBarContribution } from './status-bar/status-bar.contribution';
 
+// Enable OpenSumi debug logger
+process.env.KTLOG_SHOW_DEBUG = 'true';
+
+// enable logging for all modules
+localStorage.log = 'true'
+// enable logging only for y-webrtc
+localStorage.log = 'y-webrtc'
+// by specifying a regex variables
+localStorage.log = '^y.*'
+
 export async function renderApp(opts: IClientAppOpts) {
   const injector = new Injector();
   injector.addProviders(StatusBarContribution);
