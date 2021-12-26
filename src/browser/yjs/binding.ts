@@ -32,13 +32,6 @@ export class RelativeSelection {
   ) {}
 }
 
-/**
- * @param {monaco.editor.IEditor} editor
- * @param {Y.Text} type
- * @param {RelativeSelection} relSel
- * @param {Y.Doc} doc
- * @return {null|monaco.Selection}
- */
 export function createMonacoSelectionFromRelativeSelection(
   editor: IMonacoCodeEditor,
   type: Y.Text,
