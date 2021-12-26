@@ -9,6 +9,8 @@ import {
   SelectionDirection,
 } from '@opensumi/monaco-editor-core/esm/vs/editor/common/core/selection';
 
+const TEST_ROOM_ID = 'ash_test-client-id';
+
 export function initializeYDoc(clientId: string) {
   const ydoc = new Y.Doc({
     guid: clientId,
@@ -21,7 +23,7 @@ export function initializeYDoc(clientId: string) {
 }
 
 export function initializeWebRTCProvider(doc: Y.Doc) {
-  return new WebrtcProvider(doc.guid, doc);
+  return new WebrtcProvider(TEST_ROOM_ID, doc);
 }
 
 export class RelativeSelection {

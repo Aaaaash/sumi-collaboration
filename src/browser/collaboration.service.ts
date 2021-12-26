@@ -173,7 +173,6 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
       if (this.yWebRTCProvider?.awareness && editor.monacoEditor.getModel() === textModel) {
         const currentDecorations = this.decorations.get(editor) || [];
         const newDecorations: IModelDeltaDecoration[] = [];
-        const getLocalState = this.yWebRTCProvider?.awareness.getLocalState();
         this.yWebRTCProvider?.awareness.getStates().forEach((state, clientID) => {
           if (
             clientID !== this.yDoc?.clientID &&
