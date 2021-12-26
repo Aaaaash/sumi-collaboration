@@ -1,5 +1,8 @@
 import * as Y from 'yjs';
-import { Selection, SelectionDirection } from '@opensumi/monaco-editor-core/esm/vs/editor/common/core/selection';
+import {
+  Selection,
+  SelectionDirection,
+} from '@opensumi/monaco-editor-core/esm/vs/editor/common/core/selection';
 import { Range } from '@opensumi/monaco-editor-core/esm/vs/editor/common/core/range';
 import { WebrtcProvider } from 'y-webrtc';
 import { createMutex } from 'lib0/mutex.js';
@@ -46,7 +49,10 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
 
   @OnEvent(EditorActiveResourceStateChangedEvent)
   onEditorActiveResourceStateChangedEvent(e: EditorActiveResourceStateChangedEvent) {
-    if (this.editorService.currentEditor && !this.textEditors.has(this.editorService.currentEditor)) {
+    if (
+      this.editorService.currentEditor &&
+      !this.textEditors.has(this.editorService.currentEditor)
+    ) {
       this.textEditors.add(this.editorService.currentEditor);
       const monacoEditor = this.editorService.currentEditor.monacoEditor;
 
@@ -60,7 +66,11 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
       yText?.observe(this.onDidTextChange.bind(this));
       textModel?.setValue(yText?.toString() || '');
 
-      const rsel = createRelativeSelection(this.editorService.currentEditor.monacoEditor, textModel, yText);
+      const rsel = createRelativeSelection(
+        this.editorService.currentEditor.monacoEditor,
+        textModel,
+        yText,
+      );
       if (rsel !== null) {
         this.savedSelections.set(this.editorService.currentEditor.monacoEditor, rsel);
       }
@@ -144,7 +154,7 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
         }
       });
       this.savedSelections.forEach((rsel, editor) => {
-        const sel = createMonacoSelectionFromRelativeSelection(editor, yText, rsel, this.yDoc);
+        const sel = createMonacoSelectionFromRelativeSelection(editor, yText!, rsel, this.yDoc!);
         if (sel !== null) {
           editor.setSelection(sel);
         }
@@ -170,10 +180,21 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
             state.selection != null &&
             state.selection.anchor != null &&
             state.selection.head != null
+          ) {
+            const anchorAbs = Y.createAbsolutePositionFromRelativePosition(
+              state.selection.anchor,
+              this.yDoc!,
+            );
+            const headAbs = Y.createAbsolutePositionFromRelativePosition(
+              state.selection.head,
+              this.yDoc!,
+            );
+            if (
+              anchorAbs !== null &&
+              headAbs !== null &&
+              anchorAbs.type === yText &&
+              headAbs.type === yText
             ) {
-            const anchorAbs = Y.createAbsolutePositionFromRelativePosition(state.selection.anchor, this.yDoc!);
-            const headAbs = Y.createAbsolutePositionFromRelativePosition(state.selection.head, this.yDoc!);
-            if (anchorAbs !== null && headAbs !== null && anchorAbs.type === yText && headAbs.type === yText) {
               let start, end, afterContentClassName, beforeContentClassName;
               if (anchorAbs.index < headAbs.index) {
                 start = textModel.getPositionAt(anchorAbs.index);
@@ -198,7 +219,10 @@ export class CollaborationServiceImpl extends WithEventBus implements ICollabora
             }
           }
         });
-        this.decorations.set(editor, editor.monacoEditor.deltaDecorations(currentDecorations, newDecorations));
+        this.decorations.set(
+          editor,
+          editor.monacoEditor.deltaDecorations(currentDecorations, newDecorations),
+        );
       } else {
         // ignore decorations
         this.decorations.delete(editor);
