@@ -24,11 +24,11 @@
   "dependencies": {
     "@opensumi/ide-core-browser": "^2.13.4",
     "@opensumi/ide-core-common": "^2.13.4",
-    "@opensumi/ide-core-node": "^2.13.4",
     "y-webrtc": "^10.2.2",
     "yjs": "^13.5.23"
   },
   "devDependencies": {
+    "@opensumi/ide-core-node": "^2.13.4",
     "@opensumi/ide-addons": "^2.13.0",
     "@opensumi/ide-comments": "^2.13.0",
     "@opensumi/ide-debug": "^2.13.0",
